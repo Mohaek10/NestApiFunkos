@@ -7,13 +7,15 @@ import {
 import { CreateFunkoDto } from './dto/create-funko.dto';
 import { UpdateFunkoDto } from './dto/update-funko.dto';
 import { CategoriaFunko, Funko } from './entities/funko.entity';
+import { FunkoMapper } from './mappers/funko-mapper/funko-mapper';
 
 @Injectable()
 export class FunkosService {
   private readonly logger = new Logger(FunkosService.name);
+
   private arrayFunkos: Funko[] = [];
 
-  constructor() {
+  constructor(private readonly funkoMapper: FunkoMapper) {
     this.crearFunkos();
   }
 
@@ -29,17 +31,11 @@ export class FunkosService {
     }
 
     const categoria = CategoriaFunko[createFunkoDto.categoria];
-
-    const newFunko: Funko = {
-      id: this.arrayFunkos.length + 1,
-      ...createFunkoDto,
-      categoria: categoria,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
-      isDeleted: false,
-    };
-    newFunko.id = this.arrayFunkos.length + 1;
-    this.logger.log('Funko creado ' + JSON.stringify(newFunko));
+    const newFunko = this.funkoMapper.toFunkoFromCreate(
+      createFunkoDto,
+      this.arrayFunkos.length + 1,
+      categoria,
+    );
 
     this.arrayFunkos.push(newFunko);
 
@@ -65,6 +61,9 @@ export class FunkosService {
   update(id: number, updateFunkoDto: UpdateFunkoDto) {
     this.logger.log('Actualizando un funko');
     const idActual = this.arrayFunkos.findIndex((funko) => funko.id === id);
+    if (idActual === -1) {
+      throw new NotFoundException(`Funko con id ${id} no encontrado`);
+    }
     let categoria: CategoriaFunko;
     if (updateFunkoDto.categoria !== undefined) {
       const categoriaIsValid = Object.values(CategoriaFunko).includes(
@@ -78,18 +77,16 @@ export class FunkosService {
 
       categoria = CategoriaFunko[updateFunkoDto.categoria];
     }
+    const funkoViejo = this.arrayFunkos[idActual];
+    const funkoActualizado = this.funkoMapper.toFunkoFromUpdate(
+      updateFunkoDto,
+      funkoViejo,
+      id,
+      categoria,
+    );
 
-    if (idActual !== -1) {
-      this.arrayFunkos[idActual] = {
-        ...this.arrayFunkos[idActual],
-        ...updateFunkoDto,
-        categoria: categoria,
-        fechaActualizacion: new Date(),
-      };
-      return this.arrayFunkos[idActual];
-    }
-
-    throw new NotFoundException(`Funko con id ${id} no encontrado`);
+    this.arrayFunkos[idActual] = funkoActualizado;
+    return funkoActualizado;
   }
 
   remove(id: number) {
