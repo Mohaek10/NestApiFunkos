@@ -14,6 +14,7 @@ export class UpdateFunkoDto extends PartialType(CreateFunkoDto) {
   nombre: string;
   @IsNumber()
   @IsOptional()
+  @Min(0)
   precio: number;
   @IsNumber()
   @IsOptional()
