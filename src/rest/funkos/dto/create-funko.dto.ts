@@ -6,11 +6,13 @@ import {
   Length,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateFunkoDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 50)
+  @Transform(({ value }) => value.trim())
   nombre: string;
 
   @IsNumber()
