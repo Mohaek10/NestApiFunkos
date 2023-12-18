@@ -1,11 +1,12 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
 } from '@nestjs/common';
 import { FunkosService } from './funkos.service';
 import { CreateFunkoDto } from './dto/create-funko.dto';
@@ -15,28 +16,33 @@ import { UpdateFunkoDto } from './dto/update-funko.dto';
 export class FunkosController {
   constructor(private readonly funkosService: FunkosService) {}
 
-  @Post()
-  create(@Body() createFunkoDto: CreateFunkoDto) {
-    return this.funkosService.create(createFunkoDto);
-  }
-
   @Get()
-  findAll() {
-    return this.funkosService.findAll();
+  async findAll() {
+    return await this.funkosService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.funkosService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    return await this.funkosService.findOne(+id);
+  }
+
+  @Post()
+  @HttpCode(201)
+  async create(@Body() createFunkoDto: CreateFunkoDto) {
+    return await this.funkosService.create(createFunkoDto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFunkoDto: UpdateFunkoDto) {
-    return this.funkosService.update(+id, updateFunkoDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateFunkoDto: UpdateFunkoDto,
+  ) {
+    return await this.funkosService.update(+id, updateFunkoDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.funkosService.remove(+id);
+  @HttpCode(204)
+  async remove(@Param('id') id: string) {
+    return await this.funkosService.remove(+id);
   }
 }

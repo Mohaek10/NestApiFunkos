@@ -18,7 +18,7 @@ export class FunkosService {
   }
 
   async create(createFunkoDto: CreateFunkoDto) {
-    this.logger.log('Creando un funko');
+    this.logger.log('Creando un funko ' + JSON.stringify(createFunkoDto));
     const categoriaIsValid = Object.values(CategoriaFunko).includes(
       createFunkoDto.categoria as CategoriaFunko,
     );
@@ -38,6 +38,8 @@ export class FunkosService {
       fechaActualizacion: new Date(),
       isDeleted: false,
     };
+    newFunko.id = this.arrayFunkos.length + 1;
+    this.logger.log('Funko creado ' + JSON.stringify(newFunko));
 
     this.arrayFunkos.push(newFunko);
 
