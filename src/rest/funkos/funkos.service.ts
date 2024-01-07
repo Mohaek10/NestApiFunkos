@@ -21,7 +21,7 @@ export class FunkosService {
 
   async create(createFunkoDto: CreateFunkoDto) {
     this.logger.log('Creando un funko ' + JSON.stringify(createFunkoDto));
-    const categoriaIsValid = Object.values(CategoriaFunko).includes(
+    const categoriaIsValid: boolean = Object.values(CategoriaFunko).includes(
       createFunkoDto.categoria as CategoriaFunko,
     );
     if (!categoriaIsValid) {

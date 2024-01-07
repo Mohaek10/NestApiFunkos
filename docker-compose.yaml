@@ -1,0 +1,29 @@
+services:
+  postgres-db:
+    container_name: funkolandia-postgres
+    image: postgres:12.2-alpine
+    restart: always
+    env_file: .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - ./database/funkolandia.sql:/docker-entrypoint-initdb.d/funkolandia.sql
+    networks:
+      - funkolandia-network
+
+
+  adminer-postgres:
+    container_name: funkolandia-adminer
+    image: adminer:latest
+    restart: always
+    env_file: .env
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres-db
+    networks:
+      - funkolandia-network

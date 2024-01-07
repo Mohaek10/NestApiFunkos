@@ -1,6 +1,13 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity('funko')
 export class Funko {
+  @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
   nombre: string;
+
   precio: number;
   cantidad: number;
   imagen: string;
