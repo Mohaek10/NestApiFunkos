@@ -8,7 +8,7 @@ export class UpdateFunkoDto extends PartialType(CreateFunkoDto) {
   nombre?: string
   @IsNumber()
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'El precio debe ser mayor a 0' })
   precio?: number
   @IsNumber()
   @IsOptional()

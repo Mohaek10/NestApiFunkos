@@ -44,6 +44,6 @@ export class FunkosController {
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return await this.funkosService.remove(+id)
+    return await this.funkosService.borradoLogico(id)
   }
 }

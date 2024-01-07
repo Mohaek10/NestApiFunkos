@@ -2,9 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm'
+import { Funko } from '../../funkos/entities/funko.entity'
 
 @Entity({ name: 'categorias' })
 export class Categoria {
@@ -25,9 +27,13 @@ export class Categoria {
     type: 'timestamp',
     name: 'updated_at',
     default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date
 
   @Column({ type: 'boolean', default: true, name: 'is_deleted' })
   isDeleted: boolean
+
+  @OneToMany(() => Funko, (funko) => funko.categoria)
+  funkos: Funko[]
 }

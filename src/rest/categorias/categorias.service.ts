@@ -5,6 +5,7 @@ import { Categoria } from './entities/categoria.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CategoriasMapper } from './mappers/categorias-mapper/categorias-mapper'
+import { v4 as uuidv4 } from 'uuid'
 
 @Injectable()
 export class CategoriasService {
@@ -32,24 +33,36 @@ export class CategoriasService {
 
   async create(createCategoriaDto: CreateCategoriaDto) {
     this.logger.log(`Creando nueva categoria: ${createCategoriaDto}`)
-    return await this.categoriaRepository.save(
-      this.categoriasMapper.toEntity(createCategoriaDto),
-    )
+    const categoriaToCreate = this.categoriasMapper.toEntity(createCategoriaDto)
+    return await this.categoriaRepository.save({
+      ...categoriaToCreate,
+      id: uuidv4(),
+    })
   }
 
   async update(id: string, updateCategoriaDto: UpdateCategoriaDto) {
     this.logger.log(
       `Actualizando categoria con id: ${id} con: ${updateCategoriaDto}`,
     )
-    const categoria = await this.findOne(id)
-    const categoriaActualizada = { ...categoria, ...updateCategoriaDto }
-
-    return await this.categoriaRepository.save(categoriaActualizada)
+    const categoriaToUpdate = await this.findOne(id)
+    return await this.categoriaRepository.save({
+      ...categoriaToUpdate,
+      ...updateCategoriaDto,
+    })
   }
 
   async remove(id: string) {
     this.logger.log(`Eliminando categoria con id: ${id}`)
     const categoria = await this.findOne(id)
     return this.categoriaRepository.remove(categoria)
+  }
+  async removeLogical(id: string) {
+    this.logger.log(`Eliminando logicamente categoria con id: ${id}`)
+    const categoria = await this.findOne(id)
+    return this.categoriaRepository.save({
+      ...categoria,
+      updatedAt: new Date(),
+      isDeleted: true,
+    })
   }
 }

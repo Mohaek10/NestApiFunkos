@@ -2,12 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm'
+import { Categoria } from '../../categorias/entities/categoria.entity'
 
 @Entity('funko')
 export class Funko {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number
 
   @Column({ type: 'varchar', length: 255, nullable: false })
@@ -21,8 +24,6 @@ export class Funko {
 
   @Column({ type: 'varchar', default: 'https://via.placeholder.com/150' })
   imagen: string
-
-  categoria: CategoriaFunko
 
   @CreateDateColumn({
     type: 'timestamp',
@@ -42,14 +43,7 @@ export class Funko {
   @Column({ type: 'boolean', default: true, name: 'is_deleted' })
   isDeleted: boolean
 
-  constructor() {}
-}
-
-export enum CategoriaFunko {
-  DISNEY = 'DISNEY',
-  MARVEL = 'MARVEL',
-  DC = 'DC',
-  ANIME = 'ANIME',
-  SERIE = 'SERIE',
-  OTROS = 'OTROS',
+  @ManyToOne(() => Categoria, (categoria) => categoria.funkos)
+  @JoinColumn({ name: 'categoria_id' })
+  categoria: Categoria
 }

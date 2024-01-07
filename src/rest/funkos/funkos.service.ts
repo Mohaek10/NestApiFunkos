@@ -6,179 +6,106 @@ import {
 } from '@nestjs/common'
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { UpdateFunkoDto } from './dto/update-funko.dto'
-import { CategoriaFunko, Funko } from './entities/funko.entity'
 import { FunkoMapper } from './mappers/funko-mapper/funko-mapper'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
+import { Funko } from './entities/funko.entity'
+import { Categoria } from '../categorias/entities/categoria.entity'
 
 @Injectable()
 export class FunkosService {
   private readonly logger = new Logger(FunkosService.name)
 
-  private arrayFunkos: Funko[] = []
-
   constructor(
     private readonly funkoMapper: FunkoMapper,
     @InjectRepository(Funko)
     private readonly funkoRepository: Repository<Funko>,
-  ) {
-    this.crearFunkos()
-  }
+    @InjectRepository(Categoria)
+    private readonly categoriaRepository: Repository<Categoria>,
+  ) {}
 
   async findAll() {
     this.logger.log('Buscando todos los funko')
-    return await this.funkoRepository.find()
+    const funkos = await this.funkoRepository
+      .createQueryBuilder('funko')
+      .leftJoinAndSelect('funko.categoria', 'categoria')
+      .orderBy('funko.id', 'DESC')
+      .getMany()
+
+    return funkos.map((funko) => this.funkoMapper.toResponse(funko))
   }
 
   async findOne(id: number) {
     this.logger.log('Buscando un funko')
-    const buscarFunko = await this.funkoRepository.findOneBy({ id })
+    const buscarFunko = await this.funkoRepository
+      .createQueryBuilder('funko')
+      .leftJoinAndSelect('funko.categoria', 'categoria')
+      .where('funko.id = :id', { id: id })
+      .getOne()
 
     if (!buscarFunko) {
-      this.logger.error(`Funko con id ${id} no encontrado`)
+      this.logger.warn(`Funko con id ${id} no encontrado`)
       throw new NotFoundException(`Funko con id ${id} no encontrado`)
     }
-    return buscarFunko
+    return this.funkoMapper.toResponse(buscarFunko)
   }
   async create(createFunkoDto: CreateFunkoDto) {
     this.logger.log(`Creando un funko ${JSON.stringify(createFunkoDto)}`)
-    const categoriaIsValid: boolean = Object.values(CategoriaFunko).includes(
-      createFunkoDto.categoria as CategoriaFunko,
-    )
-    if (!categoriaIsValid) {
-      throw new BadRequestException(
-        `La categoría '${createFunkoDto.categoria}' no es válida.`,
-      )
-    }
 
-    const categoria = CategoriaFunko[createFunkoDto.categoria]
-    const newFunko = this.funkoMapper.toFunkoFromCreate(
-      createFunkoDto,
-      this.arrayFunkos.length + 1,
-      categoria,
-    )
-
-    this.arrayFunkos.push(newFunko)
-
-    return newFunko
+    const categoria = await this.comprobarCategoria(createFunkoDto.categoria)
+    const funko = this.funkoMapper.toFunko(createFunkoDto, categoria)
+    const funkoCreado = await this.funkoRepository.save(funko)
+    return this.funkoMapper.toResponse(funkoCreado)
   }
 
-  update(id: number, updateFunkoDto: UpdateFunkoDto) {
+  async update(id: number, updateFunkoDto: UpdateFunkoDto) {
     this.logger.log('Actualizando un funko')
-    const idActual = this.arrayFunkos.findIndex((funko) => funko.id === id)
-    if (idActual === -1) {
+    const funkoActualizar = this.funkoExists(id)
+    let categoria: Categoria
+    if (updateFunkoDto.categoria) {
+      categoria = await this.comprobarCategoria(updateFunkoDto.categoria)
+    }
+    const funkoActualizado = await this.funkoRepository.save({
+      ...funkoActualizar,
+      ...updateFunkoDto,
+      categoria: categoria ? categoria : (await funkoActualizar).categoria,
+    })
+    return this.funkoMapper.toResponse(funkoActualizado)
+  }
+
+  async remove(id: number) {
+    this.logger.log(`Eliminando un funko con id ${id}`)
+    const funkoEliminar = await this.funkoExists(id)
+    return await this.funkoRepository.remove(funkoEliminar)
+  }
+
+  async borradoLogico(id: number) {
+    this.logger.log(`Eliminando un funko con id ${id}`)
+    const funkoEliminar = await this.funkoExists(id)
+    funkoEliminar.isDeleted = true
+    return await this.funkoRepository.save(funkoEliminar)
+  }
+  private async funkoExists(id: number) {
+    const funko = await this.funkoRepository.findOneBy({ id })
+    if (!funko) {
       throw new NotFoundException(`Funko con id ${id} no encontrado`)
     }
-    let categoria: CategoriaFunko
-    if (updateFunkoDto.categoria !== undefined) {
-      const categoriaIsValid = Object.values(CategoriaFunko).includes(
-        updateFunkoDto.categoria as CategoriaFunko,
+    return funko
+  }
+
+  private async comprobarCategoria(nombreCategoria: string) {
+    const categoria = await this.categoriaRepository
+      .createQueryBuilder('categoria')
+      .where('LOWER(nombre)=LOWER(:nombre)', {
+        nombre: nombreCategoria.toLowerCase(),
+      })
+      .getOne()
+    if (!categoria) {
+      this.logger.warn(`Categoria con nombre ${nombreCategoria} no encontrada`)
+      throw new BadRequestException(
+        `Categoria ${nombreCategoria} no encontrada`,
       )
-      if (!categoriaIsValid) {
-        throw new BadRequestException(
-          `La categoría '${updateFunkoDto.categoria}' no es válida.`,
-        )
-      }
-
-      categoria = CategoriaFunko[updateFunkoDto.categoria]
     }
-    const funkoViejo = this.arrayFunkos[idActual]
-    const funkoActualizado = this.funkoMapper.toFunkoFromUpdate(
-      updateFunkoDto,
-      funkoViejo,
-      id,
-      categoria,
-    )
-
-    this.arrayFunkos[idActual] = funkoActualizado
-    return funkoActualizado
-  }
-
-  remove(id: number) {
-    const indiceACtual = this.arrayFunkos.findIndex((funko) => funko.id === id)
-
-    if (indiceACtual !== -1) {
-      const funkoBorrado = this.arrayFunkos.splice(indiceACtual, 1)[0]
-      return funkoBorrado
-    }
-
-    throw new NotFoundException(`Funko con id ${id} no encontrado`)
-  }
-
-  crearFunkos() {
-    const inicialFunkos: CreateFunkoDto[] = [
-      {
-        nombre: 'Mickey Mouse',
-        precio: 15.0,
-        cantidad: 50,
-        imagen: 'mickey.jpg',
-        categoria: CategoriaFunko.DISNEY,
-      },
-      {
-        nombre: 'Iron Man',
-        precio: 24,
-        cantidad: 30,
-        imagen: 'ironman.jpg',
-        categoria: CategoriaFunko.MARVEL,
-      },
-      {
-        nombre: 'Batman',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'batman.jpg',
-        categoria: CategoriaFunko.DC,
-      },
-      {
-        nombre: 'Goku',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'goku.jpg',
-        categoria: CategoriaFunko.ANIME,
-      },
-      {
-        nombre: 'Stranger Things',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'strangerthings.jpg',
-        categoria: CategoriaFunko.SERIE,
-      },
-      {
-        nombre: 'Sailor Moon',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'sailormoon.jpg',
-        categoria: CategoriaFunko.ANIME,
-      },
-      {
-        nombre: 'Snoopy',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'snoopy.jpg',
-        categoria: CategoriaFunko.DISNEY,
-      },
-      {
-        nombre: 'Spiderman',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'spiderman.jpg',
-        categoria: CategoriaFunko.MARVEL,
-      },
-      {
-        nombre: 'Superman',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'superman.jpg',
-        categoria: CategoriaFunko.DC,
-      },
-      {
-        nombre: 'Thor',
-        precio: 20,
-        cantidad: 30,
-        imagen: 'thor.jpg',
-        categoria: CategoriaFunko.MARVEL,
-      },
-    ]
-
-    inicialFunkos.forEach((funko) => this.create(funko))
+    return categoria
   }
 }
