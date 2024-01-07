@@ -4,6 +4,7 @@ import { UpdateCategoriaDto } from './dto/update-categoria.dto'
 import { Categoria } from './entities/categoria.entity'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { CategoriasMapper } from './mappers/categorias-mapper/categorias-mapper'
 
 @Injectable()
 export class CategoriasService {
@@ -12,6 +13,7 @@ export class CategoriasService {
   constructor(
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
+    private readonly categoriasMapper: CategoriasMapper,
   ) {}
   async findAll() {
     this.logger.log('Buscando todas las categorias')
@@ -28,15 +30,26 @@ export class CategoriasService {
     return categoiria
   }
 
-  create(createCategoriaDto: CreateCategoriaDto) {
-    return 'This action adds a new categoria'
+  async create(createCategoriaDto: CreateCategoriaDto) {
+    this.logger.log(`Creando nueva categoria: ${createCategoriaDto}`)
+    return await this.categoriaRepository.save(
+      this.categoriasMapper.toEntity(createCategoriaDto),
+    )
   }
 
-  update(id: string, updateCategoriaDto: UpdateCategoriaDto) {
-    return `This action updates a #${id} categoria`
+  async update(id: string, updateCategoriaDto: UpdateCategoriaDto) {
+    this.logger.log(
+      `Actualizando categoria con id: ${id} con: ${updateCategoriaDto}`,
+    )
+    const categoria = await this.findOne(id)
+    const categoriaActualizada = { ...categoria, ...updateCategoriaDto }
+
+    return await this.categoriaRepository.save(categoriaActualizada)
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} categoria`
+  async remove(id: string) {
+    this.logger.log(`Eliminando categoria con id: ${id}`)
+    const categoria = await this.findOne(id)
+    return this.categoriaRepository.remove(categoria)
   }
 }
