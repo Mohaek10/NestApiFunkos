@@ -4,6 +4,7 @@ import { AppService } from './app.service'
 import { FunkosModule } from './rest/funkos/funkos.module'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { CategoriasModule } from './rest/categorias/categorias.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
       synchronize: true,
       entities: [`${__dirname}/**/*.entity{.ts,.js}`],
     }),
+    CategoriasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
