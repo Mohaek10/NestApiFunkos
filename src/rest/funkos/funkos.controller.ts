@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common'
 import { FunkosService } from './funkos.service'
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { UpdateFunkoDto } from './dto/update-funko.dto'
@@ -24,7 +34,10 @@ export class FunkosController {
   }
 
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateFunkoDto: UpdateFunkoDto) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateFunkoDto: UpdateFunkoDto,
+  ) {
     return await this.funkosService.update(id, updateFunkoDto)
   }
 

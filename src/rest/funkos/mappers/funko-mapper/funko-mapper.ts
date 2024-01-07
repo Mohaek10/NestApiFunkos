@@ -7,7 +7,11 @@ import { UpdateFunkoDto } from '../../dto/update-funko.dto'
 export class FunkoMapper {
   constructor() {}
 
-  toFunkoFromCreate(createFunkoDto: CreateFunkoDto, id: number, categoria: CategoriaFunko): Funko {
+  toFunkoFromCreate(
+    createFunkoDto: CreateFunkoDto,
+    id: number,
+    categoria: CategoriaFunko,
+  ): Funko {
     const newFunko: Funko = {
       id: id,
       nombre: createFunkoDto.nombre,
@@ -23,7 +27,12 @@ export class FunkoMapper {
     return newFunko
   }
 
-  toFunkoFromUpdate(funkoNuevo: UpdateFunkoDto, funkoViejo: Funko, id: number, categoria: CategoriaFunko): Funko {
+  toFunkoFromUpdate(
+    funkoNuevo: UpdateFunkoDto,
+    funkoViejo: Funko,
+    id: number,
+    categoria: CategoriaFunko,
+  ): Funko {
     const funkoActualizado: Funko = {
       id: id,
       nombre: funkoNuevo.nombre ? funkoNuevo.nombre : funkoViejo.nombre,
@@ -33,7 +42,9 @@ export class FunkoMapper {
       categoria: categoria,
       fechaCreacion: funkoViejo.fechaCreacion,
       fechaActualizacion: new Date(),
-      isDeleted: funkoNuevo.isDeleted ? funkoNuevo.isDeleted : funkoViejo.isDeleted,
+      isDeleted: funkoNuevo.isDeleted
+        ? funkoNuevo.isDeleted
+        : funkoViejo.isDeleted,
     }
     return funkoActualizado
   }

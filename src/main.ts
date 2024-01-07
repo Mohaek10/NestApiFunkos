@@ -8,4 +8,6 @@ async function bootstrap() {
   await app.listen(3000)
 }
 
-bootstrap().then(() => console.log(`Servidor en ejecucion en el puerto: ${process.env.PUERTO} 👍`))
+bootstrap().then(() =>
+  console.log(`Servidor en ejecucion en el puerto: ${process.env.PUERTO} 👍`),
+)
