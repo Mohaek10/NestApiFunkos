@@ -1,33 +1,26 @@
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Length,
-  Min,
-} from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Length, Min } from 'class-validator'
+import { Transform } from 'class-transformer'
 
 export class CreateFunkoDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 50)
   @Transform(({ value }) => value.trim())
-  nombre: string;
+  nombre: string
 
   @IsNumber()
   @Min(0)
-  precio: number;
+  precio: number
 
   @IsNumber()
   @Min(0)
-  cantidad: number;
+  cantidad: number
 
   @IsString()
   @IsOptional()
-  imagen: string;
+  imagen: string
 
   @IsString()
   @IsNotEmpty()
-  categoria: string;
+  categoria: string
 }

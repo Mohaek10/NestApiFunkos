@@ -1,32 +1,26 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateFunkoDto } from './create-funko.dto';
-import {
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types'
+import { CreateFunkoDto } from './create-funko.dto'
+import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 export class UpdateFunkoDto extends PartialType(CreateFunkoDto) {
   @IsString()
   @IsOptional()
-  nombre?: string;
+  nombre?: string
   @IsNumber()
   @IsOptional()
   @Min(0)
-  precio?: number;
+  precio?: number
   @IsNumber()
   @IsOptional()
   @Min(0)
-  cantidad?: number;
+  cantidad?: number
   @IsString()
   @IsOptional()
-  imagen?: string;
+  imagen?: string
   @IsString()
   @IsOptional()
-  categoria?: string;
+  categoria?: string
   @IsOptional()
   @IsBoolean()
-  isDeleted?: boolean;
+  isDeleted?: boolean
 }

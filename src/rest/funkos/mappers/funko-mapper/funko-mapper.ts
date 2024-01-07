@@ -1,17 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { CreateFunkoDto } from '../../dto/create-funko.dto';
-import { CategoriaFunko, Funko } from '../../entities/funko.entity';
-import { UpdateFunkoDto } from '../../dto/update-funko.dto';
+import { Injectable } from '@nestjs/common'
+import { CreateFunkoDto } from '../../dto/create-funko.dto'
+import { CategoriaFunko, Funko } from '../../entities/funko.entity'
+import { UpdateFunkoDto } from '../../dto/update-funko.dto'
 
 @Injectable()
 export class FunkoMapper {
   constructor() {}
 
-  toFunkoFromCreate(
-    createFunkoDto: CreateFunkoDto,
-    id: number,
-    categoria: CategoriaFunko,
-  ): Funko {
+  toFunkoFromCreate(createFunkoDto: CreateFunkoDto, id: number, categoria: CategoriaFunko): Funko {
     const newFunko: Funko = {
       id: id,
       nombre: createFunkoDto.nombre,
@@ -22,17 +18,12 @@ export class FunkoMapper {
       fechaCreacion: new Date(),
       fechaActualizacion: new Date(),
       isDeleted: false,
-    };
-    newFunko.id = id;
-    return newFunko;
+    }
+    newFunko.id = id
+    return newFunko
   }
 
-  toFunkoFromUpdate(
-    funkoNuevo: UpdateFunkoDto,
-    funkoViejo: Funko,
-    id: number,
-    categoria: CategoriaFunko,
-  ): Funko {
+  toFunkoFromUpdate(funkoNuevo: UpdateFunkoDto, funkoViejo: Funko, id: number, categoria: CategoriaFunko): Funko {
     const funkoActualizado: Funko = {
       id: id,
       nombre: funkoNuevo.nombre ? funkoNuevo.nombre : funkoViejo.nombre,
@@ -42,10 +33,8 @@ export class FunkoMapper {
       categoria: categoria,
       fechaCreacion: funkoViejo.fechaCreacion,
       fechaActualizacion: new Date(),
-      isDeleted: funkoNuevo.isDeleted
-        ? funkoNuevo.isDeleted
-        : funkoViejo.isDeleted,
-    };
-    return funkoActualizado;
+      isDeleted: funkoNuevo.isDeleted ? funkoNuevo.isDeleted : funkoViejo.isDeleted,
+    }
+    return funkoActualizado
   }
 }

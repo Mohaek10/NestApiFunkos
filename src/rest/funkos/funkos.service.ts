@@ -3,101 +3,106 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { CreateFunkoDto } from './dto/create-funko.dto';
-import { UpdateFunkoDto } from './dto/update-funko.dto';
-import { CategoriaFunko, Funko } from './entities/funko.entity';
-import { FunkoMapper } from './mappers/funko-mapper/funko-mapper';
+} from '@nestjs/common'
+import { CreateFunkoDto } from './dto/create-funko.dto'
+import { UpdateFunkoDto } from './dto/update-funko.dto'
+import { CategoriaFunko, Funko } from './entities/funko.entity'
+import { FunkoMapper } from './mappers/funko-mapper/funko-mapper'
+import { Repository } from 'typeorm'
+import { InjectRepository } from '@nestjs/typeorm'
 
 @Injectable()
 export class FunkosService {
-  private readonly logger = new Logger(FunkosService.name);
+  private readonly logger = new Logger(FunkosService.name)
 
-  private arrayFunkos: Funko[] = [];
+  private arrayFunkos: Funko[] = []
 
-  constructor(private readonly funkoMapper: FunkoMapper) {
-    this.crearFunkos();
+  constructor(
+    private readonly funkoMapper: FunkoMapper,
+    @InjectRepository(Funko)
+    private readonly funkoRepository: Repository<Funko>,
+  ) {
+    this.crearFunkos()
   }
 
+  async findAll() {
+    this.logger.log('Buscando todos los funko')
+    return await this.funkoRepository.find()
+  }
+
+  async findOne(id: number) {
+    this.logger.log('Buscando un funko')
+    const buscarFunko = await this.funkoRepository.findOneBy({ id })
+
+    if (!buscarFunko) {
+      this.logger.error(`Funko con id ${id} no encontrado`)
+      throw new NotFoundException(`Funko con id ${id} no encontrado`)
+    }
+    return buscarFunko
+  }
   async create(createFunkoDto: CreateFunkoDto) {
-    this.logger.log('Creando un funko ' + JSON.stringify(createFunkoDto));
+    this.logger.log(`Creando un funko ${JSON.stringify(createFunkoDto)}`)
     const categoriaIsValid: boolean = Object.values(CategoriaFunko).includes(
       createFunkoDto.categoria as CategoriaFunko,
-    );
+    )
     if (!categoriaIsValid) {
       throw new BadRequestException(
         `La categoría '${createFunkoDto.categoria}' no es válida.`,
-      );
+      )
     }
 
-    const categoria = CategoriaFunko[createFunkoDto.categoria];
+    const categoria = CategoriaFunko[createFunkoDto.categoria]
     const newFunko = this.funkoMapper.toFunkoFromCreate(
       createFunkoDto,
       this.arrayFunkos.length + 1,
       categoria,
-    );
+    )
 
-    this.arrayFunkos.push(newFunko);
+    this.arrayFunkos.push(newFunko)
 
-    return newFunko;
-  }
-
-  async findAll() {
-    this.logger.log('Buscando todos los funkos');
-    return this.arrayFunkos;
-  }
-
-  async findOne(id: number) {
-    this.logger.log('Buscando un funko');
-    const buscarFunko = this.arrayFunkos.find((funko) => funko.id === id);
-
-    if (!buscarFunko) {
-      throw new NotFoundException(`Funko con id ${id} no encontrado`);
-    }
-
-    return buscarFunko;
+    return newFunko
   }
 
   update(id: number, updateFunkoDto: UpdateFunkoDto) {
-    this.logger.log('Actualizando un funko');
-    const idActual = this.arrayFunkos.findIndex((funko) => funko.id === id);
+    this.logger.log('Actualizando un funko')
+    const idActual = this.arrayFunkos.findIndex((funko) => funko.id === id)
     if (idActual === -1) {
-      throw new NotFoundException(`Funko con id ${id} no encontrado`);
+      throw new NotFoundException(`Funko con id ${id} no encontrado`)
     }
-    let categoria: CategoriaFunko;
+    let categoria: CategoriaFunko
     if (updateFunkoDto.categoria !== undefined) {
       const categoriaIsValid = Object.values(CategoriaFunko).includes(
         updateFunkoDto.categoria as CategoriaFunko,
-      );
+      )
       if (!categoriaIsValid) {
         throw new BadRequestException(
           `La categoría '${updateFunkoDto.categoria}' no es válida.`,
-        );
+        )
       }
 
-      categoria = CategoriaFunko[updateFunkoDto.categoria];
+      categoria = CategoriaFunko[updateFunkoDto.categoria]
     }
-    const funkoViejo = this.arrayFunkos[idActual];
+    const funkoViejo = this.arrayFunkos[idActual]
     const funkoActualizado = this.funkoMapper.toFunkoFromUpdate(
       updateFunkoDto,
       funkoViejo,
       id,
       categoria,
-    );
+    )
 
-    this.arrayFunkos[idActual] = funkoActualizado;
-    return funkoActualizado;
+    this.arrayFunkos[idActual] = funkoActualizado
+    return funkoActualizado
   }
 
   remove(id: number) {
-    const indiceACtual = this.arrayFunkos.findIndex((funko) => funko.id === id);
+    const indiceACtual = this.arrayFunkos.findIndex((funko) => funko.id === id)
 
     if (indiceACtual !== -1) {
-      const funkoBorrado = this.arrayFunkos.splice(indiceACtual, 1)[0];
-      return funkoBorrado;
+      const funkoBorrado = this.arrayFunkos.splice(indiceACtual, 1)[0]
+      return funkoBorrado
     }
 
-    throw new NotFoundException(`Funko con id ${id} no encontrado`);
+    throw new NotFoundException(`Funko con id ${id} no encontrado`)
   }
 
   crearFunkos() {
@@ -172,8 +177,8 @@ export class FunkosService {
         imagen: 'thor.jpg',
         categoria: CategoriaFunko.MARVEL,
       },
-    ];
+    ]
 
-    inicialFunkos.forEach((funko) => this.create(funko));
+    inicialFunkos.forEach((funko) => this.create(funko))
   }
 }
