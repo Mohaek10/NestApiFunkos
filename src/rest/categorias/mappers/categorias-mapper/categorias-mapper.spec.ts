@@ -63,6 +63,8 @@ describe('CategoriasMapper', () => {
     }
     const actualCategoria: Categoria =
       categoriasMapper.toEntity(updateCategoriaDto)
+    expect(actualCategoria).toBeInstanceOf(Categoria)
+
     expect(actualCategoria.nombre).toEqual(expectedCategoria.nombre)
   })
 })

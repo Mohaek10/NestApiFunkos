@@ -67,6 +67,7 @@ describe('FunkoMapper', () => {
     }
 
     const actualFunkoResponse: ResponseFunkoDto = funkoMapper.toResponse(funko)
+    expect(actualFunkoResponse).toBeInstanceOf(ResponseFunkoDto)
     expect(actualFunkoResponse.nombre).toEqual(funkoResponseEsperado.nombre)
     expect(actualFunkoResponse.precio).toEqual(funkoResponseEsperado.precio)
     expect(actualFunkoResponse.cantidad).toEqual(funkoResponseEsperado.cantidad)

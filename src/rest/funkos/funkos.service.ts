@@ -11,6 +11,7 @@ import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Funko } from './entities/funko.entity'
 import { Categoria } from '../categorias/entities/categoria.entity'
+import { ResponseFunkoDto } from './dto/response-funko.dto'
 
 @Injectable()
 export class FunkosService {
@@ -24,7 +25,7 @@ export class FunkosService {
     private readonly categoriaRepository: Repository<Categoria>,
   ) {}
 
-  async findAll() {
+  async findAll(): Promise<ResponseFunkoDto[]> {
     this.logger.log('Buscando todos los funko')
     const funkos = await this.funkoRepository
       .createQueryBuilder('funko')
@@ -35,7 +36,7 @@ export class FunkosService {
     return funkos.map((funko) => this.funkoMapper.toResponse(funko))
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<ResponseFunkoDto> {
     this.logger.log('Buscando un funko')
     const buscarFunko = await this.funkoRepository
       .createQueryBuilder('funko')
@@ -49,7 +50,7 @@ export class FunkosService {
     }
     return this.funkoMapper.toResponse(buscarFunko)
   }
-  async create(createFunkoDto: CreateFunkoDto) {
+  async create(createFunkoDto: CreateFunkoDto): Promise<ResponseFunkoDto> {
     this.logger.log(`Creando un funko ${JSON.stringify(createFunkoDto)}`)
 
     const categoria = await this.comprobarCategoria(createFunkoDto.categoria)
@@ -58,7 +59,10 @@ export class FunkosService {
     return this.funkoMapper.toResponse(funkoCreado)
   }
 
-  async update(id: number, updateFunkoDto: UpdateFunkoDto) {
+  async update(
+    id: number,
+    updateFunkoDto: UpdateFunkoDto,
+  ): Promise<ResponseFunkoDto> {
     this.logger.log('Actualizando un funko')
     const funkoActualizar = this.funkoExists(id)
     let categoria: Categoria
@@ -73,27 +77,28 @@ export class FunkosService {
     return this.funkoMapper.toResponse(funkoActualizado)
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<Funko> {
     this.logger.log(`Eliminando un funko con id ${id}`)
     const funkoEliminar = await this.funkoExists(id)
     return await this.funkoRepository.remove(funkoEliminar)
   }
 
-  async borradoLogico(id: number) {
+  async borradoLogico(id: number): Promise<Funko> {
     this.logger.log(`Eliminando un funko con id ${id}`)
     const funkoEliminar = await this.funkoExists(id)
     funkoEliminar.isDeleted = true
     return await this.funkoRepository.save(funkoEliminar)
   }
-  private async funkoExists(id: number) {
+  public async funkoExists(id: number): Promise<Funko> {
     const funko = await this.funkoRepository.findOneBy({ id })
     if (!funko) {
+      this.logger.warn(`Funko con id ${id} no encontrado`)
       throw new NotFoundException(`Funko con id ${id} no encontrado`)
     }
     return funko
   }
 
-  private async comprobarCategoria(nombreCategoria: string) {
+  public async comprobarCategoria(nombreCategoria: string): Promise<Categoria> {
     const categoria = await this.categoriaRepository
       .createQueryBuilder('categoria')
       .where('LOWER(nombre)=LOWER(:nombre)', {

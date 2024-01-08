@@ -9,7 +9,8 @@ import { ResponseFunkoDto } from '../../dto/response-funko.dto'
 export class FunkoMapper {
   toFunko(createFunkoDto: CreateFunkoDto, categoria: Categoria): Funko {
     const funko = plainToClass(Funko, createFunkoDto)
-    return { ...funko, categoria }
+    funko.categoria = categoria
+    return funko
   }
   toResponse(funko: Funko): ResponseFunkoDto {
     const dto = plainToClass(ResponseFunkoDto, funko)
