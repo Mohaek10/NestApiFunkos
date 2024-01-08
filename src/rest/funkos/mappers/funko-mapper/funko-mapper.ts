@@ -14,7 +14,12 @@ export class FunkoMapper {
   }
   toResponse(funko: Funko): ResponseFunkoDto {
     const dto = plainToClass(ResponseFunkoDto, funko)
-    dto.categoria = funko.categoria.nombre
+    if (funko.categoria) {
+      dto.categoria = funko.categoria.nombre
+    } else {
+      dto.categoria = null
+    }
+
     return dto
   }
 }
