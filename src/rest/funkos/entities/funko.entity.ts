@@ -40,7 +40,7 @@ export class Funko {
   })
   fechaActualizacion: Date
 
-  @Column({ type: 'boolean', default: true, name: 'is_deleted' })
+  @Column({ type: 'boolean', default: false, name: 'is_deleted' })
   isDeleted: boolean
 
   @ManyToOne(() => Categoria, (categoria) => categoria.funkos)

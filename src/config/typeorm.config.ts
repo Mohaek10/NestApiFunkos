@@ -10,6 +10,6 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   database: process.env.POSTGRES_DB || 'funko',
   autoLoadEntities: true,
   entities: [`${__dirname}/**/*.entity{.ts,.js}`],
-  synchronize: process.env.NODE_ENV !== 'prod',
-  logging: process.env.NODE_ENV !== 'prod' ? 'all' : false,
+  synchronize: process.env.PERFIL !== 'prod',
+  logging: process.env.PERFIL !== 'prod' ? 'all' : false,
 }
