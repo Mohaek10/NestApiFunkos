@@ -30,7 +30,6 @@ export class FunkosService {
     const funkos = await this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
-      .where('funko.isDeleted = false')
       .orderBy('funko.id', 'DESC')
       .getMany()
 
