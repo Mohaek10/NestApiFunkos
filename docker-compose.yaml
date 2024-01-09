@@ -11,7 +11,7 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
     volumes:
-      - ./database/funkolandia.sql:/docker-entrypoint-initdb.d/funkolandia.sql
+      - ./database/funkos.sql:/docker-entrypoint-initdb.d/funkos.sql
     networks:
       - funkolandia-network
 

@@ -5,9 +5,9 @@ import * as process from 'process'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
-  app.setGlobalPrefix(process.env.VERSION || 'v1')
+  app.setGlobalPrefix(process.env.VERSION || 'api')
   app.useGlobalPipes(new ValidationPipe())
-  await app.listen(3000)
+  await app.listen(`${process.env.PUERTO}`)
 }
 
 bootstrap().then(() =>
