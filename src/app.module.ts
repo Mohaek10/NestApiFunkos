@@ -5,6 +5,9 @@ import { FunkosModule } from './rest/funkos/funkos.module'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { CategoriasModule } from './rest/categorias/categorias.module'
+import { StorageController } from './rest/storage/storage.controller';
+import { StorageService } from './rest/storage/storage.service';
+import { StorageModule } from './rest/storage/storage.module';
 
 @Module({
   imports: [
@@ -22,8 +25,9 @@ import { CategoriasModule } from './rest/categorias/categorias.module'
       entities: [`${__dirname}/**/*.entity{.ts,.js}`],
     }),
     CategoriasModule,
+    StorageModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, StorageController],
+  providers: [AppService, StorageService],
 })
 export class AppModule {}
