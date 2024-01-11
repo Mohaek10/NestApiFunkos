@@ -16,7 +16,7 @@ INSERT INTO "categorias" ("id", "nombre", "created_at", "updated_at", "is_delete
 
 DROP TABLE IF EXISTS "funko";
 DROP SEQUENCE IF EXISTS funko_id_seq;
-CREATE SEQUENCE funko_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1;
+CREATE SEQUENCE funko_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 4 CACHE 1;
 
 CREATE TABLE "public"."funko" (
     "id" bigint DEFAULT nextval('funko_id_seq') NOT NULL,
