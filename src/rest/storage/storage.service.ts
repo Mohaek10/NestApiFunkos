@@ -33,14 +33,17 @@ export class StorageService {
       this.logger.log(`Fichero no encontrado ${nombreFich}`)
     }
   }
-  obtenerNombreFichero(nombreFich: string): string {
-    const url = new URL(nombreFich)
-    const pathName = url.pathname
-    return pathName.split('/').pop()
-  }
+  // obtenerNombreFichero(nombreFich: string): string {
+  //   this.logger.log(`Obteniendo nombre fichero ${nombreFich}`)
+  //   const url = new URL(nombreFich)
+  //   const pathName = url.pathname
+  //   this.logger.log(`Nombre fichero ${pathName}`)
+  //   return pathName.split('/').pop()
+  // }
   borraFichero(nombreFich: string): void {
     this.logger.log(`Borrando fichero ${nombreFich}`)
     const file = path.join(process.cwd(), process.env.SUBIRARCHIVOS, nombreFich)
+    this.logger.log(`Fichero a borrar ${file}`)
     if (fs.existsSync(file)) {
       fs.unlinkSync(file)
     } else {

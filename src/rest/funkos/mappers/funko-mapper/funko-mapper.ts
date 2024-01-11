@@ -4,6 +4,7 @@ import { Categoria } from '../../../categorias/entities/categoria.entity'
 import { Funko } from '../../entities/funko.entity'
 import { plainToClass } from 'class-transformer'
 import { ResponseFunkoDto } from '../../dto/response-funko.dto'
+import { UpdateFunkoDto } from '../../dto/update-funko.dto'
 
 @Injectable()
 export class FunkoMapper {
@@ -21,5 +22,16 @@ export class FunkoMapper {
     }
 
     return dto
+  }
+
+  toFunkoFromUpdate(
+    funko: Funko,
+    updateFunkoDto: UpdateFunkoDto,
+    categoria: Categoria,
+  ): Funko {
+    const funkoUpdate = plainToClass(Funko, updateFunkoDto)
+    funkoUpdate.id = funko.id
+    funkoUpdate.categoria = categoria
+    return funkoUpdate
   }
 }

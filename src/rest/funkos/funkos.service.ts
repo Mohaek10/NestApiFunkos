@@ -12,6 +12,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Funko } from './entities/funko.entity'
 import { Categoria } from '../categorias/entities/categoria.entity'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
+import { StorageService } from '../storage/storage.service'
+import { Request } from 'express'
 
 @Injectable()
 export class FunkosService {
@@ -23,6 +25,7 @@ export class FunkosService {
     private readonly funkoRepository: Repository<Funko>,
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
+    private readonly storageService: StorageService,
   ) {}
 
   async findAll(): Promise<ResponseFunkoDto[]> {
@@ -68,12 +71,18 @@ export class FunkosService {
     let categoria: Categoria
     if (updateFunkoDto.categoria) {
       categoria = await this.comprobarCategoria(updateFunkoDto.categoria)
+    } else {
+      categoria = (await funkoActualizar).categoria
     }
-    const funkoActualizado = await this.funkoRepository.save({
-      ...funkoActualizar,
-      ...updateFunkoDto,
-      categoria: categoria ? categoria : (await funkoActualizar).categoria,
-    })
+    const nuevoFunko = this.funkoMapper.toFunkoFromUpdate(
+      await funkoActualizar,
+      updateFunkoDto,
+      categoria,
+    )
+    this.logger.log(`Actualizando un funko ${JSON.stringify(nuevoFunko)}`)
+
+    const funkoActualizado = await this.funkoRepository.save(nuevoFunko)
+    this.logger.log(`Funko actualizado ${JSON.stringify(funkoActualizado)}`)
     return this.funkoMapper.toResponse(funkoActualizado)
   }
 
@@ -88,6 +97,54 @@ export class FunkosService {
     const funkoEliminar = await this.funkoExists(id)
     funkoEliminar.isDeleted = true
     return await this.funkoRepository.save(funkoEliminar)
+  }
+
+  public async actualizarImagen(
+    id: number,
+    file: Express.Multer.File,
+    req: Request,
+    withUrl: boolean,
+  ) {
+    this.logger.log(`Actualizando imagen del funko con id ${id}`)
+    const funko = await this.funkoExists(id)
+    if (funko.imagen !== 'https://via.placeholder.com/150') {
+      this.logger.log(`Eliminando imagen del funko con id ${id}`)
+      const fileNameWithOutUrl = funko.imagen
+      try {
+        this.storageService.borraFichero(fileNameWithOutUrl)
+      } catch (error) {
+        this.logger.error(`Error al eliminar la imagen ${error}`)
+      }
+    }
+    if (!file) {
+      throw new BadRequestException('No se ha subido ningún fichero')
+    }
+    let filePath: string
+
+    if (withUrl) {
+      this.logger.log('Generando url')
+      const version = process.env.VERSION ? `/${process.env.VERSION}` : 'api'
+      filePath = `${req.protocol}://${req.get('host')}${version}/storage/${
+        file.filename
+      }`
+    } else {
+      filePath = file.filename
+    }
+    funko.imagen = file.filename
+    await this.funkoRepository.save(funko)
+    funko.imagen = filePath
+    return this.funkoMapper.toResponse(funko)
+  }
+  public async crearUrlImagen(id: number, req: Request) {
+    this.logger.log(`Creando url imagen del funko con id ${id}`)
+    const funko = await this.funkoExists(id)
+    if (funko.imagen === 'https://via.placeholder.com/150') {
+      return funko.imagen
+    }
+    const version = process.env.VERSION ? `/${process.env.VERSION}` : 'api'
+    return `${req.protocol}://${req.get('host')}${version}/storage/${
+      funko.imagen
+    }`
   }
   public async funkoExists(id: number): Promise<Funko> {
     const funko = await this.funkoRepository.findOneBy({ id })
