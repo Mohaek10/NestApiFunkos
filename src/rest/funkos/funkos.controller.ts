@@ -22,17 +22,23 @@ import { extname } from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import * as process from 'process'
 import { Request } from 'express'
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager'
 
 @Controller('funkos')
+@UseInterceptors(CacheInterceptor)
 export class FunkosController {
   constructor(private readonly funkosService: FunkosService) {}
 
   @Get()
+  @CacheKey('funkos')
+  @CacheTTL(60)
   async findAll() {
     return await this.funkosService.findAll()
   }
 
   @Get(':id')
+  @CacheKey('funko')
+  @CacheTTL(60)
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.funkosService.findOne(+id)
   }
@@ -40,7 +46,9 @@ export class FunkosController {
   @Post()
   @HttpCode(201)
   async create(@Body() createFunkoDto: CreateFunkoDto) {
-    return await this.funkosService.create(createFunkoDto)
+    const nuevoFunko = await this.funkosService.create(createFunkoDto)
+    await this.funkosService.invalidateCacheKey('funkos')
+    return nuevoFunko
   }
 
   @Patch(':id')
@@ -48,13 +56,19 @@ export class FunkosController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateFunkoDto: UpdateFunkoDto,
   ) {
-    return await this.funkosService.update(id, updateFunkoDto)
+    const funkoActualizado = await this.funkosService.update(id, updateFunkoDto)
+    await this.funkosService.invalidateCacheKey('funkos')
+    await this.funkosService.invalidateCacheKey(`funko${id}`)
+    return funkoActualizado
   }
 
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id', ParseIntPipe) id: number) {
-    return await this.funkosService.borradoLogico(id)
+    const funkoBorrado = await this.funkosService.remove(id)
+    await this.funkosService.invalidateCacheKey('funkos')
+    await this.funkosService.invalidateCacheKey(`funko${id}`)
+    return funkoBorrado
   }
 
   @Patch('/imagen/:id')
@@ -77,12 +91,23 @@ export class FunkosController {
       },
     }),
   )
-  actualizarImagen(
+  async actualizarImagen(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ) {
     console.log(file)
-    return this.funkosService.actualizarImagen(id, file, req, true)
+    if (!file) {
+      throw new BadRequestException('No se ha enviado ningún fichero')
+    }
+    const funkoActualizado = this.funkosService.actualizarImagen(
+      id,
+      file,
+      req,
+      true,
+    )
+    await this.funkosService.invalidateCacheKey('funkos')
+    await this.funkosService.invalidateCacheKey(`funko${id}`)
+    return funkoActualizado
   }
 }

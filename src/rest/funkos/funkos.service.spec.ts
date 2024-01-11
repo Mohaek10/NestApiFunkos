@@ -8,6 +8,8 @@ import { getRepositoryToken } from '@nestjs/typeorm'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { CreateFunkoDto } from './dto/create-funko.dto'
+import { StorageService } from '../storage/storage.service'
+import { FunkosNotificationsGateway } from '../websockets/notifications/funkos-notifications.gateway'
 
 describe('FunkosService', () => {
   let service: FunkosService
@@ -22,6 +24,8 @@ describe('FunkosService', () => {
         { provide: getRepositoryToken(Funko), useClass: Repository },
         { provide: getRepositoryToken(Categoria), useClass: Repository },
         FunkoMapper,
+        StorageService,
+        FunkosNotificationsGateway,
       ],
     }).compile()
 

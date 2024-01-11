@@ -5,6 +5,7 @@ import { Funko } from '../../entities/funko.entity'
 import { plainToClass } from 'class-transformer'
 import { ResponseFunkoDto } from '../../dto/response-funko.dto'
 import { UpdateFunkoDto } from '../../dto/update-funko.dto'
+import { FunkosNotificationDto } from '../../../websockets/notifications/dto/funkos-notificacion.dto'
 
 @Injectable()
 export class FunkoMapper {
@@ -15,7 +16,7 @@ export class FunkoMapper {
   }
   toResponse(funko: Funko): ResponseFunkoDto {
     const dto = plainToClass(ResponseFunkoDto, funko)
-    if (funko.categoria) {
+    if (funko.categoria && funko.categoria.nombre) {
       dto.categoria = funko.categoria.nombre
     } else {
       dto.categoria = null
@@ -33,5 +34,14 @@ export class FunkoMapper {
     funkoUpdate.id = funko.id
     funkoUpdate.categoria = categoria
     return funkoUpdate
+  }
+  toNotificationDto(funko: Funko): FunkosNotificationDto {
+    const dto = plainToClass(FunkosNotificationDto, funko)
+    if (funko.categoria && funko.categoria.nombre) {
+      dto.categoria = funko.categoria.nombre
+    } else {
+      dto.categoria = null
+    }
+    return dto
   }
 }
