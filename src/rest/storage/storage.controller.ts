@@ -70,7 +70,13 @@ export class StorageController {
   ) {
     this.logger.log(`Obteniendo fichero ${nombreFich}`)
     const fichero = this.storageService.encontrarFichero(nombreFich)
-    this.logger.log(`Fichero encontrado ${nombreFich}`)
+    this.logger.log(`Fichero obtenido ${nombreFich}`)
     res.sendFile(fichero)
+  }
+
+  @Get()
+  obtenerTodosLosFicheros() {
+    this.logger.log(`Obteniendo todos los ficheros con sus urls`)
+    return this.storageService.obtenerTodasLasImagenesConUrls()
   }
 }

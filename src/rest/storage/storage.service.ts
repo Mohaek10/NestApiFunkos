@@ -19,6 +19,16 @@ export class StorageService {
       }
     }
   }
+
+  obtenerTodasLasImagenesConUrls(): string[] {
+    this.logger.log(`Obteniendo todas las imágenes`)
+    const version = process.env.VERSION ? `/${process.env.VERSION}` : ''
+    const url = `${process.env.PROTOCOLO}://${process.env.HOST}${version}/storage/`
+    const ficheros = fs.readdirSync(this.ficheroSubida)
+    const ficherosConUrl = ficheros.map((fichero) => `${url}${fichero}`)
+    this.logger.log(`Ficheros con url ${ficherosConUrl}`)
+    return ficherosConUrl
+  }
   encontrarFichero(nombreFich: string): string {
     this.logger.log(`Buscando fichero ${nombreFich}`)
     const fichero = path.join(
@@ -31,6 +41,7 @@ export class StorageService {
       return fichero
     } else {
       this.logger.log(`Fichero no encontrado ${nombreFich}`)
+      throw new NotFoundException(`Fichero ${nombreFich} no encontrado`)
     }
   }
   // obtenerNombreFichero(nombreFich: string): string {
