@@ -4,6 +4,7 @@ import { Categoria } from '../../../categorias/entities/categoria.entity'
 import { CreateFunkoDto } from '../../dto/create-funko.dto'
 import { Funko } from '../../entities/funko.entity'
 import { ResponseFunkoDto } from '../../dto/response-funko.dto'
+import { FunkosNotificationDto } from '../../../websockets/notifications/dto/funkos-notificacion.dto'
 
 describe('FunkoMapper', () => {
   let funkoMapper: FunkoMapper
@@ -74,6 +75,30 @@ describe('FunkoMapper', () => {
     expect(actualFunkoResponse.imagen).toEqual(funkoResponseEsperado.imagen)
     expect(actualFunkoResponse.categoria).toEqual(
       funkoResponseEsperado.categoria,
+    )
+  })
+  it('Devuelve toNotificationDto', () => {
+    const funkoNotificationEsperado: FunkosNotificationDto = {
+      ...funko,
+      categoria: categoriaEntity.nombre,
+    }
+    const actualFunkoNotification: FunkosNotificationDto =
+      funkoMapper.toNotificationDto(funko)
+    expect(actualFunkoNotification).toBeInstanceOf(FunkosNotificationDto)
+    expect(actualFunkoNotification.nombre).toEqual(
+      funkoNotificationEsperado.nombre,
+    )
+    expect(actualFunkoNotification.precio).toEqual(
+      funkoNotificationEsperado.precio,
+    )
+    expect(actualFunkoNotification.cantidad).toEqual(
+      funkoNotificationEsperado.cantidad,
+    )
+    expect(actualFunkoNotification.imagen).toEqual(
+      funkoNotificationEsperado.imagen,
+    )
+    expect(actualFunkoNotification.categoria).toEqual(
+      funkoNotificationEsperado.categoria,
     )
   })
 })

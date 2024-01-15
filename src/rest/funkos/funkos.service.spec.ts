@@ -10,12 +10,38 @@ import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { CreateFunkoDto } from './dto/create-funko.dto'
 import { StorageService } from '../storage/storage.service'
 import { FunkosNotificationsGateway } from '../websockets/notifications/funkos-notifications.gateway'
+import { Cache } from 'cache-manager'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
 
 describe('FunkosService', () => {
   let service: FunkosService
   let funkoRep: Repository<Funko>
   let categoriaRep: Repository<Categoria>
   let funkoMapper: FunkoMapper
+  let storageService: StorageService
+  let funkoNotificationsGateway: FunkosNotificationsGateway
+  let cacheManager: Cache
+
+  const funkoMapperMock = () => ({
+    toResponse: jest.fn(),
+    toFunko: jest.fn(),
+    toFunkoFromUpdate: jest.fn(),
+  })
+
+  const storageServiceMock = () => ({
+    borraFichero: jest.fn(),
+    encontrarFichero: jest.fn(),
+  })
+  const funkoNotificationsGatewayMock = () => ({
+    sendMessage: jest.fn(),
+  })
+  const cacheManagerMock = {
+    get: jest.fn(() => Promise.resolve()),
+    set: jest.fn(() => Promise.resolve()),
+    store: {
+      keys: jest.fn(),
+    },
+  }
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -23,9 +49,13 @@ describe('FunkosService', () => {
         FunkosService,
         { provide: getRepositoryToken(Funko), useClass: Repository },
         { provide: getRepositoryToken(Categoria), useClass: Repository },
-        FunkoMapper,
-        StorageService,
-        FunkosNotificationsGateway,
+        { provide: FunkoMapper, useFactory: funkoMapperMock },
+        { provide: StorageService, useValue: storageServiceMock },
+        {
+          provide: FunkosNotificationsGateway,
+          useValue: funkoNotificationsGatewayMock,
+        },
+        { provide: CACHE_MANAGER, useValue: cacheManagerMock },
       ],
     }).compile()
 
@@ -35,6 +65,11 @@ describe('FunkosService', () => {
       getRepositoryToken(Categoria),
     )
     funkoMapper = module.get<FunkoMapper>(FunkoMapper)
+    storageService = module.get<StorageService>(StorageService)
+    funkoNotificationsGateway = module.get<FunkosNotificationsGateway>(
+      FunkosNotificationsGateway,
+    )
+    cacheManager = module.get<Cache>(CACHE_MANAGER)
   })
 
   it('should be defined', () => {
@@ -49,6 +84,9 @@ describe('FunkosService', () => {
         orderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockReturnValue(resultado),
       }
+      jest.spyOn(cacheManager, 'get').mockResolvedValue(Promise.resolve(null))
+      jest.spyOn(cacheManager, 'set').mockResolvedValue()
+
       jest
         .spyOn(funkoRep, 'createQueryBuilder')
         .mockReturnValue(mockQuery as any)
@@ -57,6 +95,8 @@ describe('FunkosService', () => {
         .mockReturnValue({} as ResponseFunkoDto)
 
       expect(await service.findAll()).toEqual(resultado)
+      expect(cacheManager.get).toHaveBeenCalled()
+      expect(cacheManager.set).toHaveBeenCalled()
     })
   })
   describe('findOne', () => {
@@ -105,8 +145,10 @@ describe('FunkosService', () => {
       jest
         .spyOn(funkoMapper, 'toResponse')
         .mockReturnValue(mockResponseFunkoDto)
+      jest.spyOn(cacheManager.store, 'keys').mockResolvedValue([])
 
       expect(await service.create(createFunkoDto)).toEqual(mockResponseFunkoDto)
+      expect(cacheManager.store.keys).toHaveBeenCalled()
     })
   })
 

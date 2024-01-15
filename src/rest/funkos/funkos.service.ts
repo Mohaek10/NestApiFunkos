@@ -220,7 +220,10 @@ export class FunkosService {
     )
     this.funkoNotificationsGateway.sendMessage(notificacion)
   }
-  public async invalidateCacheKey(key: string): Promise<void> {
-    await this.cacheManager.del(key)
+  public async invalidateCacheKey(keyPattern: string): Promise<void> {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 }
