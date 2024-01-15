@@ -17,11 +17,19 @@ import { StorageService } from '../storage/storage.service'
 import { Request } from 'express'
 import { FunkosNotificationsGateway } from '../websockets/notifications/funkos-notifications.gateway'
 import {
-  NotificacionTipo,
   Notificacion,
+  NotificacionTipo,
 } from '../websockets/notifications/models/notificacion.model'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Cache } from 'cache-manager'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
+import { hash } from 'typeorm/util/StringUtils'
+
 @Injectable()
 export class FunkosService {
   private readonly logger = new Logger(FunkosService.name)
@@ -37,21 +45,43 @@ export class FunkosService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  async findAll(): Promise<ResponseFunkoDto[]> {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Buscando todos los funko')
-    const cache: ResponseFunkoDto[] = await this.cacheManager.get('funkos')
+    const cache = await this.cacheManager.get(
+      `funkos_${hash(JSON.stringify(query))}`,
+    )
     if (cache) {
       this.logger.log('Datos obtenidos de la cache')
       return cache
     }
-    const funkos = await this.funkoRepository
+    const queryBuilder = this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
-      .orderBy('funko.id', 'DESC')
-      .getMany()
-    const funkosDto = funkos.map((funko) => this.funkoMapper.toResponse(funko))
-    await this.cacheManager.set('funkos', funkosDto, 60)
-    return funkosDto
+
+    const paginatedResult = await paginate(query, queryBuilder, {
+      sortableColumns: ['nombre', 'precio', 'cantidad'],
+      defaultSortBy: [['nombre', 'ASC']],
+      searchableColumns: ['nombre', 'precio', 'cantidad'],
+      filterableColumns: {
+        nombre: [FilterOperator.EQ, FilterSuffix.NOT],
+        precio: [FilterOperator.GT],
+        cantidad: true,
+        isDeleted: [FilterOperator.EQ, FilterSuffix.NOT],
+      },
+    })
+    const resultado = {
+      data: (paginatedResult.data ?? []).map((funko) =>
+        this.funkoMapper.toResponse(funko),
+      ),
+      meta: paginatedResult.meta,
+      links: paginatedResult.links,
+    }
+    await this.cacheManager.set(
+      `funkos_${hash(JSON.stringify(query))}`,
+      resultado,
+      60,
+    )
+    return resultado
   }
 
   async findOne(id: number): Promise<ResponseFunkoDto> {

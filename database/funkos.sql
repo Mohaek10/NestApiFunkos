@@ -12,7 +12,10 @@ CREATE TABLE "public"."categorias" (
 ) WITH (oids = false);
 
 INSERT INTO "categorias" ("id", "nombre", "created_at", "updated_at", "is_deleted") VALUES
-('939cf843-5ecd-477c-a68a-0207122a4a88',	'Marvel',	'2024-01-08 15:01:33.423473',	'2024-01-08 15:01:33.423473',	'f');
+('939cf843-5ecd-477c-a68a-0207122a4a88',	'Marvel',	'2024-01-08 15:01:33.423473',	'2024-01-08 15:01:33.423473',	'f'),
+('9ec926bd-36ab-43c4-aeaa-11c4f18b9cc8',	'DC',	'2024-01-08 15:01:33.423473',	'2024-01-08 15:01:33.423473',	'f'),
+('5f93881a-e486-4aa7-ad6d-b9f23a967695',	'Anime',	'2024-01-08 15:01:33.423473',	'2024-01-08 15:01:33.423473',	'f'),
+('cf81a106-447d-4933-830f-0eb1ac929ad2',	'Videojuegos',	'2024-01-08 15:01:33.423473',	'2024-01-08 15:01:33.423473',	'f');
 
 DROP TABLE IF EXISTS "funko";
 DROP SEQUENCE IF EXISTS funko_id_seq;

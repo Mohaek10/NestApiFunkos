@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from 'uuid'
 import * as process from 'process'
 import { Request } from 'express'
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager'
+import { Paginate, PaginateQuery } from 'nestjs-paginate'
 
 @Controller('funkos')
 @UseInterceptors(CacheInterceptor)
@@ -30,10 +31,8 @@ export class FunkosController {
   constructor(private readonly funkosService: FunkosService) {}
 
   @Get()
-  @CacheKey('funkos')
-  @CacheTTL(60)
-  async findAll() {
-    return await this.funkosService.findAll()
+  async findAll(@Paginate() query: PaginateQuery) {
+    return await this.funkosService.findAll(query)
   }
 
   @Get(':id')

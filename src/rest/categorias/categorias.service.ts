@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -11,6 +12,14 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { CategoriasMapper } from './mappers/categorias-mapper/categorias-mapper'
 import { v4 as uuidv4 } from 'uuid'
+import {
+  FilterOperator,
+  FilterSuffix,
+  paginate,
+  PaginateQuery,
+} from 'nestjs-paginate'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Cache } from 'cache-manager'
 
 @Injectable()
 export class CategoriasService {
@@ -20,10 +29,27 @@ export class CategoriasService {
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
     private readonly categoriasMapper: CategoriasMapper,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
-  async findAll(): Promise<Categoria[]> {
+  async findAll(query: PaginateQuery) {
     this.logger.log('Buscando todas las categorias')
-    return await this.categoriaRepository.find()
+    const cache = await this.cacheManager.get(`categorias_${query.search}`)
+    if (cache) {
+      this.logger.log('Encontrado en cache')
+      return cache
+    }
+    const result = await paginate(query, this.categoriaRepository, {
+      sortableColumns: ['nombre'],
+      defaultSortBy: [['nombre', 'ASC']],
+      searchableColumns: ['nombre'],
+      filterableColumns: {
+        nombre: [FilterOperator.EQ, FilterSuffix.NOT],
+        isDeleted: [FilterOperator.EQ, FilterSuffix.NOT],
+      },
+      //select: ['id', 'nombre', 'isDeleted', 'createdAt', 'updatedAt'],
+    })
+    await this.cacheManager.set(`categorias_${query.search}`, result, 3000)
+    return result
   }
 
   async findOne(id: string): Promise<Categoria> {
