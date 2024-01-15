@@ -16,7 +16,7 @@ INSERT INTO "categorias" ("id", "nombre", "created_at", "updated_at", "is_delete
 
 DROP TABLE IF EXISTS "funko";
 DROP SEQUENCE IF EXISTS funko_id_seq;
-CREATE SEQUENCE funko_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1;
+CREATE SEQUENCE funko_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 4 CACHE 1;
 
 CREATE TABLE "public"."funko" (
     "id" bigint DEFAULT nextval('funko_id_seq') NOT NULL,
@@ -32,8 +32,8 @@ CREATE TABLE "public"."funko" (
 ) WITH (oids = false);
 
 INSERT INTO "funko" ("id", "nombre", "precio", "cantidad", "imagen", "fecha_creacion", "fecha_actualizacion", "is_deleted", "categoria_id") VALUES
-(1,	'Spiderman',	'500000',	20,	'Spider.jpg',	'2024-01-08 15:01:41.953773',	'2024-01-08 15:01:41.953773',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
-(2,	'Spiderman',	'500000',	20,	'Spider.jpg',	'2024-01-08 19:32:40.05201',	'2024-01-08 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
-(3,	'Batman',	'9090099',	20,	'Batman.jpg',	'2024-01-09 19:32:40.05201',	'2024-01-09 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88');
+(1,	'Spiderman',	'500000',	20,	'https://via.placeholder.com/150',	'2024-01-08 15:01:41.953773',	'2024-01-08 15:01:41.953773',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
+(2,	'Spiderman',	'500000',	20,	'https://via.placeholder.com/150',	'2024-01-08 19:32:40.05201',	'2024-01-08 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
+(3,	'Batman',	'9090099',	20,	'https://via.placeholder.com/150',	'2024-01-09 19:32:40.05201',	'2024-01-09 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88');
 ALTER TABLE ONLY "public"."funko" ADD CONSTRAINT "FK_65a8b6911e611599a6f532678d3" FOREIGN KEY (categoria_id) REFERENCES categorias(id) NOT DEFERRABLE;
 

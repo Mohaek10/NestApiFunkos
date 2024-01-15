@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -12,7 +13,15 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Funko } from './entities/funko.entity'
 import { Categoria } from '../categorias/entities/categoria.entity'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
-
+import { StorageService } from '../storage/storage.service'
+import { Request } from 'express'
+import { FunkosNotificationsGateway } from '../websockets/notifications/funkos-notifications.gateway'
+import {
+  NotificacionTipo,
+  Notificacion,
+} from '../websockets/notifications/models/notificacion.model'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Cache } from 'cache-manager'
 @Injectable()
 export class FunkosService {
   private readonly logger = new Logger(FunkosService.name)
@@ -23,21 +32,35 @@ export class FunkosService {
     private readonly funkoRepository: Repository<Funko>,
     @InjectRepository(Categoria)
     private readonly categoriaRepository: Repository<Categoria>,
+    private readonly storageService: StorageService,
+    private readonly funkoNotificationsGateway: FunkosNotificationsGateway,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async findAll(): Promise<ResponseFunkoDto[]> {
     this.logger.log('Buscando todos los funko')
+    const cache: ResponseFunkoDto[] = await this.cacheManager.get('funkos')
+    if (cache) {
+      this.logger.log('Datos obtenidos de la cache')
+      return cache
+    }
     const funkos = await this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
       .orderBy('funko.id', 'DESC')
       .getMany()
-
-    return funkos.map((funko) => this.funkoMapper.toResponse(funko))
+    const funkosDto = funkos.map((funko) => this.funkoMapper.toResponse(funko))
+    await this.cacheManager.set('funkos', funkosDto, 60)
+    return funkosDto
   }
 
   async findOne(id: number): Promise<ResponseFunkoDto> {
     this.logger.log('Buscando un funko')
+    const cache: ResponseFunkoDto = await this.cacheManager.get(`funko-${id}`)
+    if (cache) {
+      this.logger.log('Datos obtenidos de la cache')
+      return cache
+    }
     const buscarFunko = await this.funkoRepository
       .createQueryBuilder('funko')
       .leftJoinAndSelect('funko.categoria', 'categoria')
@@ -48,7 +71,9 @@ export class FunkosService {
       this.logger.warn(`Funko con id ${id} no encontrado`)
       throw new NotFoundException(`Funko con id ${id} no encontrado`)
     }
-    return this.funkoMapper.toResponse(buscarFunko)
+    const funkoDto = this.funkoMapper.toResponse(buscarFunko)
+    await this.cacheManager.set(`funko-${id}`, funkoDto, 60)
+    return funkoDto
   }
   async create(createFunkoDto: CreateFunkoDto): Promise<ResponseFunkoDto> {
     this.logger.log(`Creando un funko ${JSON.stringify(createFunkoDto)}`)
@@ -56,7 +81,11 @@ export class FunkosService {
     const categoria = await this.comprobarCategoria(createFunkoDto.categoria)
     const funko = this.funkoMapper.toFunko(createFunkoDto, categoria)
     const funkoCreado = await this.funkoRepository.save(funko)
-    return this.funkoMapper.toResponse(funkoCreado)
+    const dto = this.funkoMapper.toResponse(funkoCreado)
+    //Eliminar en cache
+    await this.invalidateCacheKey('funkos')
+    this.onChanges(NotificacionTipo.CREATE, dto)
+    return dto
   }
 
   async update(
@@ -68,13 +97,23 @@ export class FunkosService {
     let categoria: Categoria
     if (updateFunkoDto.categoria) {
       categoria = await this.comprobarCategoria(updateFunkoDto.categoria)
+    } else {
+      categoria = (await funkoActualizar).categoria
     }
-    const funkoActualizado = await this.funkoRepository.save({
-      ...funkoActualizar,
-      ...updateFunkoDto,
-      categoria: categoria ? categoria : (await funkoActualizar).categoria,
-    })
-    return this.funkoMapper.toResponse(funkoActualizado)
+    const nuevoFunko = this.funkoMapper.toFunkoFromUpdate(
+      await funkoActualizar,
+      updateFunkoDto,
+      categoria,
+    )
+    this.logger.log(`Actualizando un funko ${JSON.stringify(nuevoFunko)}`)
+
+    const funkoActualizado = await this.funkoRepository.save(nuevoFunko)
+    this.logger.log(`Funko actualizado ${JSON.stringify(funkoActualizado)}`)
+    const dto = this.funkoMapper.toResponse(funkoActualizado)
+    //Eliminar en cache
+    await this.invalidateCacheKey('funkos')
+    this.onChanges(NotificacionTipo.UPDATE, dto)
+    return dto
   }
 
   async remove(id: number): Promise<Funko> {
@@ -87,7 +126,66 @@ export class FunkosService {
     this.logger.log(`Eliminando un funko con id ${id}`)
     const funkoEliminar = await this.funkoExists(id)
     funkoEliminar.isDeleted = true
-    return await this.funkoRepository.save(funkoEliminar)
+    const imagenAborrar = funkoEliminar.imagen
+    if (imagenAborrar !== 'https://via.placeholder.com/150') {
+      try {
+        this.storageService.borraFichero(imagenAborrar)
+      } catch (error) {
+        this.logger.error(`Error al eliminar la imagen ${error}`)
+      }
+    }
+    const funkoBorrado = await this.funkoRepository.save(funkoEliminar)
+    const dto = this.funkoMapper.toResponse(funkoBorrado)
+    this.onChanges(NotificacionTipo.DELETE, dto)
+    //Eliminar cache
+    await this.invalidateCacheKey('funkos')
+    return funkoBorrado
+  }
+
+  public async actualizarImagen(
+    id: number,
+    file: Express.Multer.File,
+    req: Request,
+    withUrl: boolean,
+  ) {
+    this.logger.log(`Actualizando imagen del funko con id ${id}`)
+    let funko: Funko
+    try {
+      funko = await this.funkoExists(id)
+    } catch (error) {
+      throw new BadRequestException(error.message)
+    }
+    if (funko.imagen !== 'https://via.placeholder.com/150') {
+      this.logger.log(`Eliminando imagen del funko con id ${id}`)
+      const fileNameWithOutUrl = funko.imagen
+      try {
+        this.storageService.borraFichero(fileNameWithOutUrl)
+      } catch (error) {
+        this.logger.error(`Error al eliminar la imagen ${error}`)
+      }
+    }
+    if (!file) {
+      throw new BadRequestException('No se ha subido ningún fichero')
+    }
+    let filePath: string
+
+    if (withUrl) {
+      this.logger.log('Generando url')
+      const version = process.env.VERSION ? `/${process.env.VERSION}` : 'api'
+      filePath = `${req.protocol}://${req.get('host')}${version}/storage/${
+        file.filename
+      }`
+    } else {
+      filePath = file.filename
+    }
+    funko.imagen = file.filename
+    await this.funkoRepository.save(funko)
+    funko.imagen = filePath
+    const dto = this.funkoMapper.toResponse(funko)
+    this.onChanges(NotificacionTipo.UPDATE, dto)
+    //Eliminar cache
+    await this.invalidateCacheKey('funkos')
+    return dto
   }
   public async funkoExists(id: number): Promise<Funko> {
     const funko = await this.funkoRepository.findOneBy({ id })
@@ -112,5 +210,20 @@ export class FunkosService {
       )
     }
     return categoria
+  }
+  private onChanges(tipo: NotificacionTipo, data: ResponseFunkoDto) {
+    const notificacion = new Notificacion<ResponseFunkoDto>(
+      'Funkos',
+      tipo,
+      data,
+      new Date(),
+    )
+    this.funkoNotificationsGateway.sendMessage(notificacion)
+  }
+  public async invalidateCacheKey(keyPattern: string): Promise<void> {
+    const cacheKeys = await this.cacheManager.store.keys()
+    const keysToDelete = cacheKeys.filter((key) => key.startsWith(keyPattern))
+    const promises = keysToDelete.map((key) => this.cacheManager.del(key))
+    await Promise.all(promises)
   }
 }
