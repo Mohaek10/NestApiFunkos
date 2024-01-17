@@ -36,7 +36,7 @@ CREATE TABLE "public"."funko" (
 
 INSERT INTO "funko" ("id", "nombre", "precio", "cantidad", "imagen", "fecha_creacion", "fecha_actualizacion", "is_deleted", "categoria_id") VALUES
 (1,	'Spiderman',	'500000',	20,	'https://via.placeholder.com/150',	'2024-01-08 15:01:41.953773',	'2024-01-08 15:01:41.953773',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
-(2,	'Spiderman',	'500000',	20,	'https://via.placeholder.com/150',	'2024-01-08 19:32:40.05201',	'2024-01-08 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
+(2,	'IronMan',	'300000',	20,	'https://via.placeholder.com/150',	'2024-01-08 19:32:40.05201',	'2024-01-08 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88'),
 (3,	'Batman',	'9090099',	20,	'https://via.placeholder.com/150',	'2024-01-09 19:32:40.05201',	'2024-01-09 19:32:40.05201',	'f',	'939cf843-5ecd-477c-a68a-0207122a4a88');
 ALTER TABLE ONLY "public"."funko" ADD CONSTRAINT "FK_65a8b6911e611599a6f532678d3" FOREIGN KEY (categoria_id) REFERENCES categorias(id) NOT DEFERRABLE;
 
