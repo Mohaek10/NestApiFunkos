@@ -64,7 +64,7 @@ export class FunkosController {
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id', ParseIntPipe) id: number) {
-    const funkoBorrado = await this.funkosService.remove(id)
+    const funkoBorrado = await this.funkosService.borradoLogico(id)
     await this.funkosService.invalidateCacheKey('funkos')
     await this.funkosService.invalidateCacheKey(`funko${id}`)
     return funkoBorrado

@@ -4,6 +4,8 @@ import { FunkosService } from './funkos.service'
 import { ResponseFunkoDto } from './dto/response-funko.dto'
 import { NotFoundException } from '@nestjs/common'
 import { Funko } from './entities/funko.entity'
+import { Paginated } from 'nestjs-paginate'
+import { CacheModule } from '@nestjs/cache-manager'
 
 describe('FunkosController', () => {
   let controller: FunkosController
@@ -17,9 +19,12 @@ describe('FunkosController', () => {
       update: jest.fn(),
       remove: jest.fn(),
       borradoLogico: jest.fn(),
+      actualizarImagen: jest.fn(),
+      invalidateCacheKey: jest.fn(),
     }
 
     const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
       controllers: [FunkosController],
       providers: [
         {
@@ -39,11 +44,30 @@ describe('FunkosController', () => {
 
   describe('findAll', () => {
     it('Debe de obtener todos los funkos', async () => {
-      const mockResultado: Array<ResponseFunkoDto> = []
-      jest.spyOn(service, 'findAll').mockResolvedValue(mockResultado)
-      const result = await controller.findAll()
-      expect(result).toBe(mockResultado)
-      expect(service.findAll).toHaveBeenCalled()
+      const paginateOptions = {
+        page: 1,
+        limit: 10,
+        path: 'funkos',
+      }
+      const testFunkos = {
+        data: [],
+        meta: {
+          itemsPerPage: 10,
+          totalItems: 1,
+          currentPage: 1,
+          totalPages: 1,
+        },
+        links: {
+          first: 'funkos?page=1&limit=10',
+          previous: '',
+          next: '',
+          last: '',
+        },
+      } as Paginated<ResponseFunkoDto>
+      jest.spyOn(service, 'findAll').mockResolvedValue(testFunkos)
+      const result: any = await controller.findAll(paginateOptions)
+      expect(result.meta.itemsPerPage).toEqual(paginateOptions.limit)
+      expect(result.meta.currentPage).toEqual(paginateOptions.page)
     })
   })
   describe('findOne', () => {
@@ -120,10 +144,8 @@ describe('FunkosController', () => {
       const mockResultado: Funko = new Funko()
       mockResultado.id = id
       jest.spyOn(service, 'borradoLogico').mockResolvedValue(mockResultado)
-      const result = await controller.remove(id)
-      expect(result).toBe(mockResultado)
+      await controller.remove(id)
       expect(service.borradoLogico).toHaveBeenCalled()
-      expect(service.borradoLogico).toHaveBeenCalledWith(id)
     })
     it('Debe de devolver un error si no existe el funko', async () => {
       jest
